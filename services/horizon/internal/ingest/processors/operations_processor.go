@@ -652,11 +652,11 @@ func (operation *transactionOperationWrapper) Participants() ([]xdr.AccountId, e
 		participants = append(participants, *sponsor)
 	}
 
-	return dedupe(participants), nil
+	return dedupeParticipants(participants), nil
 }
 
-// dedupe remove any duplicate ids from `in`
-func dedupe(in []xdr.AccountId) (out []xdr.AccountId) {
+// dedupeParticipants remove any duplicate ids from `in`
+func dedupeParticipants(in []xdr.AccountId) (out []xdr.AccountId) {
 	set := map[string]xdr.AccountId{}
 	for _, id := range in {
 		set[id.Address()] = id
@@ -688,4 +688,45 @@ func operationsParticipants(transaction ingest.LedgerTransaction, sequence uint3
 	}
 
 	return participants, nil
+}
+
+// ClaimableBalances returns the accounts taking part in the operation.
+func (operation *transactionOperationWrapper) ClaimableBalances() ([]xdr.ClaimableBalanceId, error) {
+	cbs := []xdr.ClaimableBalanceId{}
+	op := operation.operation
+
+	switch operation.OperationType() {
+	case xdr.OperationTypeCreateClaimableBalance:
+		// TODO: Can we figure out the id here? maybe it is sequence-index?
+		// transaction := operation.transaction
+		// id := toid.New(int32(operation.ledgerSequence), int32(transaction.Index), 0).ToInt64()
+	case xdr.OperationTypeClaimClaimableBalance:
+		op := operation.operation.Body.MustClaimClaimableBalanceOp()
+		cbs = append(cbs, op.BalanceId)
+	case xdr.OperationTypeClawback:
+		// TODO: Anything here?
+	case xdr.OperationTypeClawbackClaimableBalance:
+		op := operation.operation.Body.MustClawbackClaimableBalanceOp()
+		cbs = append(cbs, op.BalanceId)
+	default:
+		return cbs, fmt.Errorf("Unknown operation type: %s", op.Body.Type)
+	}
+
+	return dedupeClaimableBalances(cbs)
+}
+
+func dedupeClaimableBalances(in []xdr.ClaimableBalanceId) (out []xdr.ClaimableBalanceId, err error) {
+	set := map[string]xdr.ClaimableBalanceId{}
+	for _, id := range in {
+		hexID, err := xdr.MarshalHex(id)
+		if err != nil {
+			return out, errors.New("error parsing BalanceID")
+		}
+		set[hexID] = id
+	}
+
+	for _, id := range set {
+		out = append(out, id)
+	}
+	return
 }
