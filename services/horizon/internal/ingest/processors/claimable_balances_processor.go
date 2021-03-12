@@ -7,15 +7,77 @@ import (
 	"github.com/stellar/go/xdr"
 )
 
-type ClaimableBalancesProcessor struct {
-	qClaimableBalances history.QClaimableBalances
-	cache              *ingest.ChangeCompactor
+type claimableBalance struct {
+	claimabeBalanceID int64
+	transactionSet    map[int64]struct{}
+	operationSet      map[int64]struct{}
 }
 
-func NewClaimableBalancesProcessor(Q history.QClaimableBalances) *ClaimableBalancesProcessor {
-	p := &ClaimableBalancesProcessor{qClaimableBalances: Q}
+func (b claimableBalance) addOperationID(id int64) {
+	if b.operationSet == nil {
+		b.operationSet = map[int64]struct{}{}
+	}
+	b.operationSet[id] = struct{}{}
+}
+
+type ClaimableBalancesProcessor struct {
+	sequence            uint32
+	claimableBalanceSet map[string]claimableBalance
+	qClaimableBalances  history.QClaimableBalances
+	cache               *ingest.ChangeCompactor
+}
+
+func NewClaimableBalancesProcessor(Q history.QClaimableBalances, sequence uint32) *ClaimableBalancesProcessor {
+	p := &ClaimableBalancesProcessor{
+		qClaimableBalances:  Q,
+		sequence:            sequence,
+		claimableBalanceSet: map[string]claimableBalance{},
+	}
 	p.reset()
 	return p
+}
+
+func (p *ClaimableBalancesProcessor) ProcessTransaction(transaction ingest.LedgerTransaction) error {
+	err := p.addTransactionClaimableBalances(p.claimableBalanceSet, p.sequence, transaction)
+	if err != nil {
+		return err
+	}
+
+	err = p.addOperationClaimableBalances(p.claimableBalanceSet, p.sequence, transaction)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *ClaimableBalancesProcessor) addTransactionClaimableBalances(set map[string]claimableBalance, sequence uint32, transaction ingest.LedgerTransaction) error {
+	panic("did not implement")
+}
+
+func (p *ClaimableBalancesProcessor) addOperationClaimableBalances(cbSet map[string]claimableBalance, sequence uint32, transaction ingest.LedgerTransaction) error {
+	claimableBalances, err := operationsClaimableBalances(transaction, sequence)
+	if err != nil {
+		return errors.Wrap(err, "could not determine operation participants")
+	}
+
+	for operationID, cbs := range claimableBalances {
+		for _, cb := range cbs {
+			hexID, err := xdr.MarshalHex(cb)
+			if err != nil {
+				return errors.New("error parsing BalanceID")
+			}
+			entry := cbSet[hexID]
+			entry.addOperationID(operationID)
+			cbSet[hexID] = entry
+		}
+	}
+
+	return nil
+}
+
+func operationsClaimableBalances(transaction ingest.LedgerTransaction, sequence uint32) (map[int64][]xdr.ClaimableBalanceId, error) {
+
 }
 
 func (p *ClaimableBalancesProcessor) reset() {

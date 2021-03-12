@@ -30,7 +30,7 @@ func (s *ClaimableBalancesProcessorTestSuiteState) SetupTest() {
 		On("NewClaimableBalancesBatchInsertBuilder", maxBatchSize).
 		Return(s.mockBatchInsertBuilder)
 
-	s.processor = NewClaimableBalancesProcessor(s.mockQ)
+	s.processor = NewClaimableBalancesProcessor(s.mockQ, -1)
 }
 
 func (s *ClaimableBalancesProcessorTestSuiteState) TearDownTest() {
@@ -97,7 +97,7 @@ func (s *ClaimableBalancesProcessorTestSuiteLedger) SetupTest() {
 		On("NewClaimableBalancesBatchInsertBuilder", maxBatchSize).
 		Return(s.mockBatchInsertBuilder)
 
-	s.processor = NewClaimableBalancesProcessor(s.mockQ)
+	s.processor = NewClaimableBalancesProcessor(s.mockQ, -1)
 }
 
 func (s *ClaimableBalancesProcessorTestSuiteLedger) TearDownTest() {
