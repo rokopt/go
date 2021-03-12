@@ -11,18 +11,18 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestClaimableBalancesProcessorTestSuiteState(t *testing.T) {
-	suite.Run(t, new(ClaimableBalancesProcessorTestSuiteState))
+func TestClaimableBalancesTransactionProcessorTestSuiteState(t *testing.T) {
+	suite.Run(t, new(ClaimableBalancesTransactionProcessorTestSuiteState))
 }
 
-type ClaimableBalancesProcessorTestSuiteState struct {
+type ClaimableBalancesTransactionProcessorTestSuiteState struct {
 	suite.Suite
-	processor              *ClaimableBalancesProcessor
+	processor              *ClaimableBalancesTransactionProcessor
 	mockQ                  *history.MockQClaimableBalances
 	mockBatchInsertBuilder *history.MockClaimableBalancesBatchInsertBuilder
 }
 
-func (s *ClaimableBalancesProcessorTestSuiteState) SetupTest() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteState) SetupTest() {
 	s.mockQ = &history.MockQClaimableBalances{}
 	s.mockBatchInsertBuilder = &history.MockClaimableBalancesBatchInsertBuilder{}
 
@@ -30,21 +30,21 @@ func (s *ClaimableBalancesProcessorTestSuiteState) SetupTest() {
 		On("NewClaimableBalancesBatchInsertBuilder", maxBatchSize).
 		Return(s.mockBatchInsertBuilder)
 
-	s.processor = NewClaimableBalancesProcessor(s.mockQ, -1)
+	s.processor = NewClaimableBalancesTransactionProcessor(s.mockQ, 0)
 }
 
-func (s *ClaimableBalancesProcessorTestSuiteState) TearDownTest() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteState) TearDownTest() {
 	s.mockBatchInsertBuilder.On("Exec").Return(nil).Once()
 	s.Assert().NoError(s.processor.Commit())
 	s.mockQ.AssertExpectations(s.T())
 	s.mockBatchInsertBuilder.AssertExpectations(s.T())
 }
 
-func (s *ClaimableBalancesProcessorTestSuiteState) TestNoEntries() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteState) TestNoEntries() {
 	// Nothing processed, assertions in TearDownTest.
 }
 
-func (s *ClaimableBalancesProcessorTestSuiteState) TestCreatesClaimableBalances() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteState) TestCreatesClaimableBalances() {
 	lastModifiedLedgerSeq := xdr.Uint32(123)
 	cBalance := xdr.ClaimableBalanceEntry{
 		BalanceId: xdr.ClaimableBalanceId{
@@ -78,18 +78,18 @@ func (s *ClaimableBalancesProcessorTestSuiteState) TestCreatesClaimableBalances(
 	s.Assert().NoError(err)
 }
 
-func TestClaimableBalancesProcessorTestSuiteLedger(t *testing.T) {
-	suite.Run(t, new(ClaimableBalancesProcessorTestSuiteLedger))
+func TestClaimableBalancesTransactionProcessorTestSuiteLedger(t *testing.T) {
+	suite.Run(t, new(ClaimableBalancesTransactionProcessorTestSuiteLedger))
 }
 
-type ClaimableBalancesProcessorTestSuiteLedger struct {
+type ClaimableBalancesTransactionProcessorTestSuiteLedger struct {
 	suite.Suite
-	processor              *ClaimableBalancesProcessor
+	processor              *ClaimableBalancesTransactionProcessor
 	mockQ                  *history.MockQClaimableBalances
 	mockBatchInsertBuilder *history.MockClaimableBalancesBatchInsertBuilder
 }
 
-func (s *ClaimableBalancesProcessorTestSuiteLedger) SetupTest() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) SetupTest() {
 	s.mockQ = &history.MockQClaimableBalances{}
 	s.mockBatchInsertBuilder = &history.MockClaimableBalancesBatchInsertBuilder{}
 
@@ -97,20 +97,20 @@ func (s *ClaimableBalancesProcessorTestSuiteLedger) SetupTest() {
 		On("NewClaimableBalancesBatchInsertBuilder", maxBatchSize).
 		Return(s.mockBatchInsertBuilder)
 
-	s.processor = NewClaimableBalancesProcessor(s.mockQ, -1)
+	s.processor = NewClaimableBalancesTransactionProcessor(s.mockQ, 0)
 }
 
-func (s *ClaimableBalancesProcessorTestSuiteLedger) TearDownTest() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TearDownTest() {
 	s.mockBatchInsertBuilder.On("Exec").Return(nil).Once()
 	s.Assert().NoError(s.processor.Commit())
 	s.mockQ.AssertExpectations(s.T())
 }
 
-func (s *ClaimableBalancesProcessorTestSuiteLedger) TestNoTransactions() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestNoTransactions() {
 	// Nothing processed, assertions in TearDownTest.
 }
 
-func (s *ClaimableBalancesProcessorTestSuiteLedger) TestNewClaimableBalance() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestNewClaimableBalance() {
 	lastModifiedLedgerSeq := xdr.Uint32(123)
 	cBalance := xdr.ClaimableBalanceEntry{
 		BalanceId: xdr.ClaimableBalanceId{
@@ -171,7 +171,7 @@ func (s *ClaimableBalancesProcessorTestSuiteLedger) TestNewClaimableBalance() {
 	).Return(nil).Once()
 }
 
-func (s *ClaimableBalancesProcessorTestSuiteLedger) TestUpdateClaimableBalance() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestUpdateClaimableBalance() {
 	cBalance := xdr.ClaimableBalanceEntry{
 		BalanceId: xdr.ClaimableBalanceId{
 			Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
@@ -225,7 +225,7 @@ func (s *ClaimableBalancesProcessorTestSuiteLedger) TestUpdateClaimableBalance()
 	).Return(int64(1), nil).Once()
 }
 
-func (s *ClaimableBalancesProcessorTestSuiteLedger) TestRemoveClaimableBalance() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestRemoveClaimableBalance() {
 	cBalance := xdr.ClaimableBalanceEntry{
 		BalanceId: xdr.ClaimableBalanceId{
 			Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
