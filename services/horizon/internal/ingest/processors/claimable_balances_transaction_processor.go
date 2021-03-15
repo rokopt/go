@@ -33,7 +33,7 @@ type ClaimableBalancesTransactionProcessor struct {
 	qClaimableBalances  history.QHistoryClaimableBalances
 }
 
-func NewClaimableBalancesTransactionProcessor(Q history.QClaimableBalances, sequence uint32) *ClaimableBalancesTransactionProcessor {
+func NewClaimableBalancesTransactionProcessor(Q history.QHistoryClaimableBalances, sequence uint32) *ClaimableBalancesTransactionProcessor {
 	return &ClaimableBalancesTransactionProcessor{
 		qClaimableBalances:  Q,
 		sequence:            sequence,
@@ -81,8 +81,96 @@ func (p *ClaimableBalancesTransactionProcessor) addTransactionClaimableBalances(
 func claimableBalancesForTransaction(
 	sequence uint32,
 	transaction ingest.LedgerTransaction,
-) ([]xdr.AccountId, error) {
-	panic("TODO: Implement this")
+) ([]xdr.ClaimableBalanceId, error) {
+	transactionID := toid.New(int32(sequence), int32(transaction.Index), 0).ToInt64()
+	cbs := []xdr.ClaimableBalanceId{}
+	c, err := claimableBalancesForMeta(transaction.Meta)
+	if err != nil {
+		return nil, err
+	}
+	cbs = append(cbs, c...)
+
+	// TODO: Note we should re-use the info we found when adding operations, instead
+	// of duplicating the work. Also do it for participants processor.
+	cs, err := operationsClaimableBalances(transaction, sequence)
+	if err != nil {
+		return errors.Wrap(err, "could not determine operation claimable balances")
+	}
+	for _, cbs := range claimableBalances {
+		for _, cb := range cbs {
+			hexID, err := xdr.MarshalHex(cb)
+			if err != nil {
+				return errors.New("error parsing BalanceID")
+			}
+			entry := cbSet[hexID]
+			entry.addTransactionID(transactionID)
+			cbSet[hexID] = entry
+		}
+	}
+}
+
+func claimableBalancesForMeta(meta xdr.TransactionMeta) ([]xdr.ClaimableBalanceId, error) {
+	var balances []xdr.ClaimableBalanceId
+	if meta.Operations == nil {
+		return balances, nil
+	}
+
+	for _, op := range *meta.Operations {
+		var cbs []xdr.ClaimableBalanceId
+		cbs, err := claimableBalancesForChanges(op.Changes)
+		if err != nil {
+			return nil, err
+		}
+
+		balances = append(balances, cbs...)
+	}
+
+	return balances, nil
+}
+
+func claimableBalancesForChanges(
+	changes xdr.LedgerEntryChanges,
+) ([]xdr.ClaimableBalanceId, error) {
+	var cbs []xdr.ClaimableBalanceId
+
+	for _, c := range changes {
+		var cb *xdr.ClaimableBalanceId
+
+		switch c.Type {
+		case xdr.LedgerEntryChangeTypeLedgerEntryCreated:
+			cb = claimableBalanceForLedgerEntry(c.MustCreated())
+		case xdr.LedgerEntryChangeTypeLedgerEntryRemoved:
+			cb = claimableBalanceForLedgerKey(c.MustRemoved())
+		case xdr.LedgerEntryChangeTypeLedgerEntryUpdated:
+			cb = claimableBalanceForLedgerEntry(c.MustUpdated())
+		case xdr.LedgerEntryChangeTypeLedgerEntryState:
+			cb = claimableBalanceForLedgerEntry(c.MustState())
+		default:
+			return nil, errors.Errorf("Unknown change type: %s", c.Type)
+		}
+
+		if cb != nil {
+			cbs = append(cbs, *cb)
+		}
+	}
+
+	return cbs, nil
+}
+
+func claimableBalanceForLedgerEntry(le xdr.LedgerEntry) *xdr.ClaimableBalanceId {
+	if le.Data.Type != xdr.LedgerEntryTypeClaimableBalance {
+		return nil
+	}
+	id := le.Data.MustClaimableBalance().BalanceId
+	return &id
+}
+
+func claimableBalanceForLedgerKey(lk xdr.LedgerKey) *xdr.ClaimableBalanceId {
+	if lk.Type != xdr.LedgerEntryTypeClaimableBalance {
+		return nil
+	}
+	id := lk.MustClaimableBalance().BalanceId
+	return &id
 }
 
 func (p *ClaimableBalancesTransactionProcessor) addOperationClaimableBalances(cbSet map[string]claimableBalance, sequence uint32, transaction ingest.LedgerTransaction) error {

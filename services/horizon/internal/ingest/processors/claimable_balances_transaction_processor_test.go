@@ -7,257 +7,73 @@ import (
 
 	"github.com/stellar/go/ingest"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
-	"github.com/stellar/go/xdr"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
-func TestClaimableBalancesTransactionProcessorTestSuiteState(t *testing.T) {
-	suite.Run(t, new(ClaimableBalancesTransactionProcessorTestSuiteState))
-}
-
-type ClaimableBalancesTransactionProcessorTestSuiteState struct {
+type ClaimableBalancesTransactionProcessorTestSuiteLedger struct {
 	suite.Suite
-	processor              *ClaimableBalancesTransactionProcessor
-	mockQ                  *history.MockQClaimableBalances
-	mockBatchInsertBuilder *history.MockClaimableBalancesBatchInsertBuilder
-}
+	processor                         *ClaimableBalancesTransactionProcessor
+	mockQ                             *history.MockQHistoryClaimableBalances
+	mockTransactionBatchInsertBuilder *history.MockTransactionClaimableBalanceBatchInsertBuilder
+	mockOperationBatchInsertBuilder   *history.MockOperationClaimableBalanceBatchInsertBuilder
 
-func (s *ClaimableBalancesTransactionProcessorTestSuiteState) SetupTest() {
-	s.mockQ = &history.MockQClaimableBalances{}
-	s.mockBatchInsertBuilder = &history.MockClaimableBalancesBatchInsertBuilder{}
-
-	s.mockQ.
-		On("NewClaimableBalancesBatchInsertBuilder", maxBatchSize).
-		Return(s.mockBatchInsertBuilder)
-
-	s.processor = NewClaimableBalancesTransactionProcessor(s.mockQ, 0)
-}
-
-func (s *ClaimableBalancesTransactionProcessorTestSuiteState) TearDownTest() {
-	s.mockBatchInsertBuilder.On("Exec").Return(nil).Once()
-	s.Assert().NoError(s.processor.Commit())
-	s.mockQ.AssertExpectations(s.T())
-	s.mockBatchInsertBuilder.AssertExpectations(s.T())
-}
-
-func (s *ClaimableBalancesTransactionProcessorTestSuiteState) TestNoEntries() {
-	// Nothing processed, assertions in TearDownTest.
-}
-
-func (s *ClaimableBalancesTransactionProcessorTestSuiteState) TestCreatesClaimableBalances() {
-	lastModifiedLedgerSeq := xdr.Uint32(123)
-	cBalance := xdr.ClaimableBalanceEntry{
-		BalanceId: xdr.ClaimableBalanceId{
-			Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
-			V0:   &xdr.Hash{1, 2, 3},
-		},
-		Claimants: []xdr.Claimant{},
-		Asset:     xdr.MustNewCreditAsset("USD", "GC3C4AKRBQLHOJ45U4XG35ESVWRDECWO5XLDGYADO6DPR3L7KIDVUMML"),
-		Amount:    10,
-	}
-
-	s.mockBatchInsertBuilder.On("Add", &xdr.LedgerEntry{
-		LastModifiedLedgerSeq: lastModifiedLedgerSeq,
-		Data: xdr.LedgerEntryData{
-			Type:             xdr.LedgerEntryTypeClaimableBalance,
-			ClaimableBalance: &cBalance,
-		},
-	}).Return(nil).Once()
-
-	err := s.processor.ProcessChange(ingest.Change{
-		Type: xdr.LedgerEntryTypeClaimableBalance,
-		Pre:  nil,
-		Post: &xdr.LedgerEntry{
-			Data: xdr.LedgerEntryData{
-				Type:             xdr.LedgerEntryTypeClaimableBalance,
-				ClaimableBalance: &cBalance,
-			},
-			LastModifiedLedgerSeq: lastModifiedLedgerSeq,
-		},
-	})
-	s.Assert().NoError(err)
+	sequence     uint32
+	ids          []string
+	toInternalID map[string]int64
+	txs          []ingest.LedgerTransaction
 }
 
 func TestClaimableBalancesTransactionProcessorTestSuiteLedger(t *testing.T) {
 	suite.Run(t, new(ClaimableBalancesTransactionProcessorTestSuiteLedger))
 }
 
-type ClaimableBalancesTransactionProcessorTestSuiteLedger struct {
-	suite.Suite
-	processor              *ClaimableBalancesTransactionProcessor
-	mockQ                  *history.MockQClaimableBalances
-	mockBatchInsertBuilder *history.MockClaimableBalancesBatchInsertBuilder
-}
-
 func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) SetupTest() {
-	s.mockQ = &history.MockQClaimableBalances{}
-	s.mockBatchInsertBuilder = &history.MockClaimableBalancesBatchInsertBuilder{}
-
-	s.mockQ.
-		On("NewClaimableBalancesBatchInsertBuilder", maxBatchSize).
-		Return(s.mockBatchInsertBuilder)
-
-	s.processor = NewClaimableBalancesTransactionProcessor(s.mockQ, 0)
+	s.mockQ = &history.MockQHistoryClaimableBalances{}
+	s.mockTransactionBatchInsertBuilder = &history.MockTransactionClaimableBalanceBatchInsertBuilder{}
+	s.mockOperationBatchInsertBuilder = &history.MockOperationClaimableBalanceBatchInsertBuilder{}
+	s.sequence = 20
 }
 
 func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TearDownTest() {
-	s.mockBatchInsertBuilder.On("Exec").Return(nil).Once()
-	s.Assert().NoError(s.processor.Commit())
 	s.mockQ.AssertExpectations(s.T())
+	s.mockTransactionBatchInsertBuilder.AssertExpectations(s.T())
+	s.mockOperationBatchInsertBuilder.AssertExpectations(s.T())
 }
 
-func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestNoTransactions() {
-	// Nothing processed, assertions in TearDownTest.
-}
-
-func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestNewClaimableBalance() {
-	lastModifiedLedgerSeq := xdr.Uint32(123)
-	cBalance := xdr.ClaimableBalanceEntry{
-		BalanceId: xdr.ClaimableBalanceId{
-			Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
-			V0:   &xdr.Hash{1, 2, 3},
-		},
-		Claimants: []xdr.Claimant{},
-		Asset:     xdr.MustNewCreditAsset("USD", "GC3C4AKRBQLHOJ45U4XG35ESVWRDECWO5XLDGYADO6DPR3L7KIDVUMML"),
-		Amount:    10,
-	}
-	entry := xdr.LedgerEntry{
-		Data: xdr.LedgerEntryData{
-			Type:             xdr.LedgerEntryTypeClaimableBalance,
-			ClaimableBalance: &cBalance,
-		},
-		LastModifiedLedgerSeq: lastModifiedLedgerSeq,
-		Ext: xdr.LedgerEntryExt{
-			V: 1,
-			V1: &xdr.LedgerEntryExtensionV1{
-				SponsoringId: nil,
-			},
-		},
-	}
-	err := s.processor.ProcessChange(ingest.Change{
-		Type: xdr.LedgerEntryTypeClaimableBalance,
-		Pre:  nil,
-		Post: &entry,
-	})
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestEmptyClaimableBalances() {
+	// What is this expecting? Doesn't seem to assert anything...
+	err := s.processor.Commit()
 	s.Assert().NoError(err)
-
-	// add sponsor
-	updated := xdr.LedgerEntry{
-		Data: xdr.LedgerEntryData{
-			Type:             xdr.LedgerEntryTypeClaimableBalance,
-			ClaimableBalance: &cBalance,
-		},
-		LastModifiedLedgerSeq: lastModifiedLedgerSeq,
-		Ext: xdr.LedgerEntryExt{
-			V: 1,
-			V1: &xdr.LedgerEntryExtensionV1{
-				SponsoringId: xdr.MustAddressPtr("GC3C4AKRBQLHOJ45U4XG35ESVWRDECWO5XLDGYADO6DPR3L7KIDVUMML"),
-			},
-		},
-	}
-
-	entry.LastModifiedLedgerSeq = entry.LastModifiedLedgerSeq - 1
-	err = s.processor.ProcessChange(ingest.Change{
-		Type: xdr.LedgerEntryTypeClaimableBalance,
-		Pre:  &entry,
-		Post: &updated,
-	})
-	s.Assert().NoError(err)
-
-	// We use LedgerEntryChangesCache so all changes are squashed
-	s.mockBatchInsertBuilder.On(
-		"Add",
-		&updated,
-	).Return(nil).Once()
 }
 
-func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestUpdateClaimableBalance() {
-	cBalance := xdr.ClaimableBalanceEntry{
-		BalanceId: xdr.ClaimableBalanceId{
-			Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
-			V0:   &xdr.Hash{1, 2, 3},
-		},
-		Claimants: []xdr.Claimant{},
-		Asset:     xdr.MustNewCreditAsset("USD", "GC3C4AKRBQLHOJ45U4XG35ESVWRDECWO5XLDGYADO6DPR3L7KIDVUMML"),
-		Amount:    10,
-	}
-	lastModifiedLedgerSeq := xdr.Uint32(123)
+func (s *ParticipantsProcessorTestSuiteLedger) TestIngestClaimableBalancesInsertsOperationsAndTransactions() {
+	s.mockQ.On("CreateHistoryClaimableBalances", mock.AnythingOfType("[]string"), maxBatchSize).
+		Run(func(args mock.Arguments) {
+			arg := args.Get(0).([]string)
+			s.Assert().ElementsMatch(
+				s.addresses,
+				arg,
+			)
+		}).Return(s.addressToID, nil).Once()
+	s.mockQ.On("NewTransactionParticipantsBatchInsertBuilder", maxBatchSize).
+		Return(s.mockBatchInsertBuilder).Once()
+	s.mockQ.On("NewOperationParticipantBatchInsertBuilder", maxBatchSize).
+		Return(s.mockOperationsBatchInsertBuilder).Once()
 
-	pre := xdr.LedgerEntry{
-		Data: xdr.LedgerEntryData{
-			Type:             xdr.LedgerEntryTypeClaimableBalance,
-			ClaimableBalance: &cBalance,
-		},
-		LastModifiedLedgerSeq: lastModifiedLedgerSeq - 1,
-		Ext: xdr.LedgerEntryExt{
-			V: 1,
-			V1: &xdr.LedgerEntryExtensionV1{
-				SponsoringId: nil,
-			},
-		},
-	}
+	s.mockSuccessfulTransactionBatchAdds()
+	s.mockSuccessfulOperationBatchAdds()
 
-	// add sponsor
-	updated := xdr.LedgerEntry{
-		Data: xdr.LedgerEntryData{
-			Type:             xdr.LedgerEntryTypeClaimableBalance,
-			ClaimableBalance: &cBalance,
-		},
-		LastModifiedLedgerSeq: lastModifiedLedgerSeq,
-		Ext: xdr.LedgerEntryExt{
-			V: 1,
-			V1: &xdr.LedgerEntryExtensionV1{
-				SponsoringId: xdr.MustAddressPtr("GC3C4AKRBQLHOJ45U4XG35ESVWRDECWO5XLDGYADO6DPR3L7KIDVUMML"),
-			},
-		},
-	}
+	s.mockBatchInsertBuilder.On("Exec").Return(nil).Once()
+	s.mockOperationsBatchInsertBuilder.On("Exec").Return(nil).Once()
 
-	err := s.processor.ProcessChange(ingest.Change{
-		Type: xdr.LedgerEntryTypeClaimableBalance,
-		Pre:  &pre,
-		Post: &updated,
-	})
+	for _, tx := range s.txs {
+		err := s.processor.ProcessTransaction(tx)
+		s.Assert().NoError(err)
+	}
+	err := s.processor.Commit()
 	s.Assert().NoError(err)
-
-	s.mockQ.On(
-		"UpdateClaimableBalance",
-		updated,
-	).Return(int64(1), nil).Once()
 }
 
-func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestRemoveClaimableBalance() {
-	cBalance := xdr.ClaimableBalanceEntry{
-		BalanceId: xdr.ClaimableBalanceId{
-			Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
-			V0:   &xdr.Hash{1, 2, 3},
-		},
-		Claimants: []xdr.Claimant{},
-		Asset:     xdr.MustNewCreditAsset("USD", "GC3C4AKRBQLHOJ45U4XG35ESVWRDECWO5XLDGYADO6DPR3L7KIDVUMML"),
-		Amount:    10,
-	}
-	lastModifiedLedgerSeq := xdr.Uint32(123)
-	pre := xdr.LedgerEntry{
-		Data: xdr.LedgerEntryData{
-			Type:             xdr.LedgerEntryTypeClaimableBalance,
-			ClaimableBalance: &cBalance,
-		},
-		LastModifiedLedgerSeq: lastModifiedLedgerSeq - 1,
-		Ext: xdr.LedgerEntryExt{
-			V: 1,
-			V1: &xdr.LedgerEntryExtensionV1{
-				SponsoringId: nil,
-			},
-		},
-	}
-	err := s.processor.ProcessChange(ingest.Change{
-		Type: xdr.LedgerEntryTypeClaimableBalance,
-		Pre:  &pre,
-		Post: nil,
-	})
-	s.Assert().NoError(err)
-
-	s.mockQ.On(
-		"RemoveClaimableBalance",
-		cBalance,
-	).Return(int64(1), nil).Once()
-}
+// it extracts mappings from claimable balances -> operations
+// it extracts mappings from claimable balances -> transactions
