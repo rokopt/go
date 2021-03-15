@@ -14,6 +14,7 @@ import (
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/support/render/hal"
 	supportProblem "github.com/stellar/go/support/render/problem"
+	"github.com/stellar/go/xdr"
 )
 
 // Joinable query struct for join query parameter
@@ -30,6 +31,7 @@ func (qp Joinable) IncludeTransactions() bool {
 type OperationsQuery struct {
 	Joinable                  `valid:"optional"`
 	AccountID                 string `schema:"account_id" valid:"accountID,optional"`
+	ClaimableBalanceID        string `schema:"claimable_balance_id" valid:"claimableBalanceID,optional"`
 	TransactionHash           string `schema:"tx_id" valid:"transactionHash,optional"`
 	IncludeFailedTransactions bool   `schema:"include_failed" valid:"-"`
 	LedgerID                  uint32 `schema:"ledger_id" valid:"-"`
@@ -55,6 +57,19 @@ func (qp OperationsQuery) Validate() error {
 	}
 
 	return nil
+}
+
+// BalanceID returns the xdr.ClaimableBalanceId from the request query
+func (q OperationsQuery) BalanceID() (xdr.ClaimableBalanceId, error) {
+	var balanceID xdr.ClaimableBalanceId
+	err := xdr.SafeUnmarshalHex(q.ClaimableBalanceID, &balanceID)
+	if err != nil {
+		return balanceID, supportProblem.MakeInvalidFieldProblem(
+			"claimable_balance_id",
+			fmt.Errorf("Invalid claimable balance ID"),
+		)
+	}
+	return balanceID, nil
 }
 
 // GetOperationsHandler is the action handler for all end-points returning a list of operations.
@@ -97,6 +112,12 @@ func (handler GetOperationsHandler) GetResourcePage(w HeaderWriter, r *http.Requ
 		query.ForLedger(int32(qp.LedgerID))
 	case qp.TransactionHash != "":
 		query.ForTransaction(qp.TransactionHash)
+	case qp.ClaimableBalanceID != "":
+		cbID, parseErr := qp.BalanceID()
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		query.ForClaimableBalance(cbID)
 	}
 	// When querying operations for transaction return both successful
 	// and failed operations. We assume that because the user is querying
