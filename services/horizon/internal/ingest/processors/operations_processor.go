@@ -697,14 +697,28 @@ func (operation *transactionOperationWrapper) ClaimableBalances() ([]xdr.Claimab
 
 	switch operation.OperationType() {
 	case xdr.OperationTypeCreateClaimableBalance:
-		// TODO: Can we figure out the id here? maybe it is sequence-index?
-		// transaction := operation.transaction
-		// id := toid.New(int32(operation.ledgerSequence), int32(transaction.Index), 0).ToInt64()
+		// Get the ledger entry, and look through that to find the balance id.
+		changes, err := operation.transaction.GetOperationChanges(operation.index)
+		if err != nil {
+			return cbs, fmt.Errorf("Failed to find id for claimable balance: %s", operation.index)
+		}
+		found := false
+		for _, change := range changes {
+			if change.Pre != nil ||
+				change.Post == nil ||
+				change.Type != xdr.LedgerEntryTypeClaimableBalance {
+				continue
+			}
+			found = true
+			cb := change.Post.Data.MustClaimableBalance()
+			cbs = append(cbs, cb.BalanceId)
+		}
+		if !found {
+			return cbs, fmt.Errorf("Failed to find id for claimable balance: %s", operation.index)
+		}
 	case xdr.OperationTypeClaimClaimableBalance:
 		op := operation.operation.Body.MustClaimClaimableBalanceOp()
 		cbs = append(cbs, op.BalanceId)
-	case xdr.OperationTypeClawback:
-		// TODO: Anything here?
 	case xdr.OperationTypeClawbackClaimableBalance:
 		op := operation.operation.Body.MustClawbackClaimableBalanceOp()
 		cbs = append(cbs, op.BalanceId)

@@ -1,5 +1,6 @@
 -- +migrate Up
 
+-- TODO: Do we need to start from existing count(claimable_balances) and backfill?
 CREATE SEQUENCE history_claimable_balances_id_seq
     START WITH 1
     INCREMENT BY 1
