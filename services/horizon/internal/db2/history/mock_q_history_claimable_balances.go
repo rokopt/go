@@ -1,6 +1,8 @@
 package history
 
 import (
+	"github.com/stellar/go/xdr"
+
 	"github.com/stretchr/testify/mock"
 )
 
@@ -9,12 +11,12 @@ type MockQHistoryClaimableBalances struct {
 	mock.Mock
 }
 
-func (m *MockQClaimableBalances) CreateHistoryClaimableBalances(ids []string, maxBatchSize int) (map[string]int64, error) {
+func (m *MockQHistoryClaimableBalances) CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, maxBatchSize int) (map[xdr.ClaimableBalanceId]int64, error) {
 	a := m.Called(ids, maxBatchSize)
-	return a.Get(0).(map[string]int64), a.Error(1)
+	return a.Get(0).(map[xdr.ClaimableBalanceId]int64), a.Error(1)
 }
 
-func (m *MockQClaimableBalances) NewTransactionClaimableBalanceBatchInsertBuilder(maxBatchSize int) TransactionClaimableBalanceBatchInsertBuilder {
+func (m *MockQHistoryClaimableBalances) NewTransactionClaimableBalanceBatchInsertBuilder(maxBatchSize int) TransactionClaimableBalanceBatchInsertBuilder {
 	a := m.Called(maxBatchSize)
 	return a.Get(0).(TransactionClaimableBalanceBatchInsertBuilder)
 }
@@ -36,7 +38,7 @@ func (m *MockTransactionClaimableBalanceBatchInsertBuilder) Exec() error {
 }
 
 // NewOperationClaimableBalanceBatchInsertBuilder mock
-func (m *MockQClaimableBalances) NewOperationClaimableBalanceBatchInsertBuilder(maxBatchSize int) OperationClaimableBalanceBatchInsertBuilder {
+func (m *MockQHistoryClaimableBalances) NewOperationClaimableBalanceBatchInsertBuilder(maxBatchSize int) OperationClaimableBalanceBatchInsertBuilder {
 	a := m.Called(maxBatchSize)
 	return a.Get(0).(OperationClaimableBalanceBatchInsertBuilder)
 }
