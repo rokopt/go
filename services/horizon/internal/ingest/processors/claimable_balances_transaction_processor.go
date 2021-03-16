@@ -14,14 +14,14 @@ type claimableBalance struct {
 	operationSet   map[int64]struct{}
 }
 
-func (b claimableBalance) addTransactionID(id int64) {
+func (b *claimableBalance) addTransactionID(id int64) {
 	if b.transactionSet == nil {
 		b.transactionSet = map[int64]struct{}{}
 	}
 	b.transactionSet[id] = struct{}{}
 }
 
-func (b claimableBalance) addOperationID(id int64) {
+func (b *claimableBalance) addOperationID(id int64) {
 	if b.operationSet == nil {
 		b.operationSet = map[int64]struct{}{}
 	}

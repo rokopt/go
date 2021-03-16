@@ -3,12 +3,12 @@
 package processors
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/stellar/go/ingest"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/toid"
 	"github.com/stellar/go/xdr"
@@ -21,10 +21,7 @@ type ClaimableBalancesTransactionProcessorTestSuiteLedger struct {
 	mockTransactionBatchInsertBuilder *history.MockTransactionClaimableBalanceBatchInsertBuilder
 	mockOperationBatchInsertBuilder   *history.MockOperationClaimableBalanceBatchInsertBuilder
 
-	sequence     uint32
-	ids          []string
-	toInternalID map[string]int64
-	txs          []ingest.LedgerTransaction
+	sequence uint32
 }
 
 func TestClaimableBalancesTransactionProcessorTestSuiteLedger(t *testing.T) {
@@ -49,16 +46,12 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TearDownTest() {
 	s.mockOperationBatchInsertBuilder.AssertExpectations(s.T())
 }
 
-func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) mockTransactionBatchAdd(transactionID, cbID int64, err error) {
-	s.mockTransactionBatchInsertBuilder.On(
-		"Add", transactionID, cbID,
-	).Return(err).Once()
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) mockTransactionBatchAdd(transactionID, internalID int64, err error) {
+	s.mockTransactionBatchInsertBuilder.On("Add", transactionID, internalID).Return(err).Once()
 }
 
-func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) mockOperationBatchAdd(operationID, cbID int64, err error) {
-	s.mockOperationBatchInsertBuilder.On(
-		"Add", operationID, cbID,
-	).Return(err).Once()
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) mockOperationBatchAdd(operationID, internalID int64, err error) {
+	s.mockOperationBatchInsertBuilder.On("Add", operationID, internalID).Return(err).Once()
 }
 
 func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestEmptyClaimableBalances() {
@@ -68,46 +61,63 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestEmptyClaimabl
 }
 
 func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimableBalancesInsertsTransactions() {
-	// Setup a q
-	s.mockQ.On("CreateHistoryClaimableBalances", mock.AnythingOfType("[]string"), maxBatchSize).
-		Run(func(args mock.Arguments) {
-			arg := args.Get(0).([]string)
-			s.Assert().ElementsMatch(
-				"TODO: Fill this in?",
-				arg,
-			)
-		}).Return(map[xdr.ClaimableBalanceId]int64{
-		// TODO: Fill this in
-	}, nil).Once()
-
 	// Setup the transaction
+	balanceID := xdr.ClaimableBalanceId{
+		Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
+		V0:   &xdr.Hash{1, 2, 3},
+	}
+	internalID := int64(1234)
 	txn := createTransaction(true, 1)
 	txn.Index = 2
 	txn.Envelope.Operations()[0].Body = xdr.OperationBody{
-		Type:                     xdr.OperationTypeCreateClaimableBalance,
-		CreateClaimableBalanceOp: &xdr.CreateClaimableBalanceOp{},
+		Type: xdr.OperationTypeClaimClaimableBalance,
+		ClaimClaimableBalanceOp: &xdr.ClaimClaimableBalanceOp{
+			BalanceId: balanceID,
+		},
 	}
 	txnID := toid.New(int32(s.sequence), 1, 0).ToInt64()
-	opID := int64(0)      // TODO: Figure this out
-	balanceID := int64(0) // TODO: Figure this out
+	opID := (&transactionOperationWrapper{
+		index:          uint32(0),
+		transaction:    txn,
+		operation:      txn.Envelope.Operations()[0],
+		ledgerSequence: s.sequence,
+	}).ID()
+	fmt.Println("txnID:", txnID, ", opID:", opID)
+
+	// Setup a q
+	s.mockQ.On("CreateHistoryClaimableBalances", mock.AnythingOfType("[]xdr.ClaimableBalanceId"), maxBatchSize).
+		Run(func(args mock.Arguments) {
+			arg := args.Get(0).([]xdr.ClaimableBalanceId)
+			s.Assert().ElementsMatch(
+				[]xdr.ClaimableBalanceId{
+					balanceID,
+				},
+				arg,
+			)
+		}).Return(map[xdr.ClaimableBalanceId]int64{
+		balanceID: internalID,
+	}, nil).Once()
 
 	// Prepare to process transactions successfully
 	s.mockQ.On("NewTransactionClaimableBalanceBatchInsertBuilder", maxBatchSize).
 		Return(s.mockTransactionBatchInsertBuilder).Once()
-	s.mockTransactionBatchAdd(txnID, balanceID, nil)
+	s.mockTransactionBatchAdd(txnID, internalID, nil)
 	s.mockTransactionBatchInsertBuilder.On("Exec").Return(nil).Once()
 
 	// Prepare to process operations successfully
-	opBatch := &history.MockOperationClaimableBalanceBatchInsertBuilder{}
 	s.mockQ.On("NewOperationClaimableBalanceBatchInsertBuilder", maxBatchSize).
-		Return(opBatch).Once()
-	s.mockOperationBatchAdd(opID, balanceID, nil)
+		Return(s.mockOperationBatchInsertBuilder).Once()
+	s.mockOperationBatchAdd(opID, internalID, nil)
 	s.mockOperationBatchInsertBuilder.On("Exec").Return(nil).Once()
 
 	// Process the transaction
-	s.Assert().NoError(s.processor.ProcessTransaction(txn))
-	s.Assert().NoError(s.processor.Commit())
+	err := s.processor.ProcessTransaction(txn)
+	s.Assert().NoError(err)
+	err = s.processor.Commit()
+	s.Assert().NoError(err)
 }
 
 // it extracts mappings from claimable balances -> operations
 // it extracts mappings from claimable balances -> transactions
+// TODO: Test other operation types
+// TODO: Test claimableBalancesForMeta
