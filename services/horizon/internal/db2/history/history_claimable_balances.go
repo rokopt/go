@@ -1,6 +1,7 @@
 package history
 
 import (
+	"bytes"
 	"sort"
 
 	sq "github.com/Masterminds/squirrel"
@@ -18,7 +19,7 @@ type QHistoryClaimableBalances interface {
 
 // CreateHistoryClaimableBalances creates rows in the history_claimable_balances table for a given list of ids.
 // CreateHistoryClaimableBalances returns a mapping of id to its corresponding internal id in the history_claimable_balances table
-func (q *Q) CreateHistoryClaimableBalances(ids []string, batchSize int) (map[string]int64, error) {
+func (q *Q) CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, batchSize int) (map[xdr.ClaimableBalanceId]int64, error) {
 	builder := &db.BatchInsertBuilder{
 		Table:        q.GetTable("history_claimable_balances"),
 		MaxBatchSize: batchSize,
@@ -27,7 +28,9 @@ func (q *Q) CreateHistoryClaimableBalances(ids []string, batchSize int) (map[str
 
 	// sort before inserting to prevent deadlocks on acquiring a ShareLock
 	// https://github.com/stellar/go/issues/2370
-	sort.Strings(ids)
+	sort.Slice(ids, func(i, j int) bool {
+		return bytes.Compare(ids[i].V0[:], ids[j].V0[:]) < 0
+	})
 	for _, id := range ids {
 		err := builder.Row(map[string]interface{}{
 			"claimable_balance_id": id,
@@ -43,7 +46,7 @@ func (q *Q) CreateHistoryClaimableBalances(ids []string, batchSize int) (map[str
 	}
 
 	var cbs []HistoryClaimableBalance
-	toInternalID := map[string]int64{}
+	toInternalID := map[xdr.ClaimableBalanceId]int64{}
 	const selectBatchSize = 10000
 
 	for i := 0; i < len(ids); i += selectBatchSize {
@@ -58,11 +61,7 @@ func (q *Q) CreateHistoryClaimableBalances(ids []string, batchSize int) (map[str
 		}
 
 		for _, cb := range cbs {
-			hexID, err := xdr.MarshalHex(cb.BalanceID)
-			if err != nil {
-				return nil, errors.New("error parsing BalanceID")
-			}
-			toInternalID[hexID] = cb.InternalID
+			toInternalID[cb.BalanceID] = cb.InternalID
 		}
 	}
 
