@@ -48,6 +48,7 @@ func PopulateClaimableBalance(
 	lb := hal.LinkBuilder{Base: horizonContext.BaseURL(ctx)}
 	self := fmt.Sprintf("/claimable_balances/%s", dest.BalanceID)
 	dest.Links.Self = lb.Link(self)
-	dest.PT = fmt.Sprintf("%d-%s", claimableBalance.LastModifiedLedger, dest.BalanceID)
+	dest.Links.Transactions = lb.PagedLink(self, "transactions")
+	dest.Links.Operations = lb.PagedLink(self, "operations")
 	return nil
 }
