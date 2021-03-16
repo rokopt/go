@@ -12,7 +12,7 @@ import (
 
 // QHistoryClaimableBalances defines account related queries.
 type QHistoryClaimableBalances interface {
-	CreateHistoryClaimableBalances(ids []string, batchSize int) (map[string]int64, error)
+	CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, batchSize int) (map[xdr.ClaimableBalanceId]int64, error)
 	NewOperationClaimableBalanceBatchInsertBuilder(maxBatchSize int) OperationClaimableBalanceBatchInsertBuilder
 	NewTransactionClaimableBalanceBatchInsertBuilder(maxBatchSize int) TransactionClaimableBalanceBatchInsertBuilder
 }
