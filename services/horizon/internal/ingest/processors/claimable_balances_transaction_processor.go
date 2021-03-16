@@ -246,7 +246,8 @@ func (p *ClaimableBalancesTransactionProcessor) loadClaimableBalanceIDs(claimabl
 	for _, id := range ids {
 		internalID, ok := toInternalID[id]
 		if !ok {
-			return errors.Errorf("no internal id found for claimable balance %s", id)
+			// TODO: Figure out the right way to convert the id to a string here. %v will be nonsense.
+			return errors.Errorf("no internal id found for claimable balance %v", id)
 		}
 
 		cb := claimableBalanceSet[id]
