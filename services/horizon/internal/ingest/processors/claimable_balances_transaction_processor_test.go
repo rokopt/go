@@ -3,7 +3,6 @@
 package processors
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -60,29 +59,26 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestEmptyClaimabl
 	s.Assert().NoError(err)
 }
 
-func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimableBalancesInsertsTransactions() {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) testOperationInserts(balanceID xdr.ClaimableBalanceId, body xdr.OperationBody, change *xdr.LedgerEntryChange) {
 	// Setup the transaction
-	balanceID := xdr.ClaimableBalanceId{
-		Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
-		V0:   &xdr.Hash{1, 2, 3},
-	}
 	internalID := int64(1234)
 	txn := createTransaction(true, 1)
-	txn.Index = 2
-	txn.Envelope.Operations()[0].Body = xdr.OperationBody{
-		Type: xdr.OperationTypeClaimClaimableBalance,
-		ClaimClaimableBalanceOp: &xdr.ClaimClaimableBalanceOp{
-			BalanceId: balanceID,
-		},
+	txn.Envelope.Operations()[0].Body = body
+	if change != nil {
+		txn.Meta.V = 2
+		txn.Meta.V2 = &xdr.TransactionMetaV2{
+			Operations: []xdr.OperationMeta{
+				{Changes: xdr.LedgerEntryChanges{*change}},
+			},
+		}
 	}
-	txnID := toid.New(int32(s.sequence), 1, 0).ToInt64()
+	txnID := toid.New(int32(s.sequence), int32(txn.Index), 0).ToInt64()
 	opID := (&transactionOperationWrapper{
 		index:          uint32(0),
 		transaction:    txn,
 		operation:      txn.Envelope.Operations()[0],
 		ledgerSequence: s.sequence,
 	}).ID()
-	fmt.Println("txnID:", txnID, ", opID:", opID)
 
 	// Setup a q
 	s.mockQ.On("CreateHistoryClaimableBalances", mock.AnythingOfType("[]xdr.ClaimableBalanceId"), maxBatchSize).
@@ -117,7 +113,111 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimab
 	s.Assert().NoError(err)
 }
 
-// it extracts mappings from claimable balances -> operations
-// it extracts mappings from claimable balances -> transactions
-// TODO: Test other operation types
-// TODO: Test claimableBalancesForMeta
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimableBalancesInsertsClaimClaimableBalance() {
+	balanceID := xdr.ClaimableBalanceId{
+		Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
+		V0:   &xdr.Hash{1, 2, 3},
+	}
+	s.testOperationInserts(balanceID, xdr.OperationBody{
+		Type: xdr.OperationTypeClaimClaimableBalance,
+		ClaimClaimableBalanceOp: &xdr.ClaimClaimableBalanceOp{
+			BalanceId: balanceID,
+		},
+	}, nil)
+}
+
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimableBalancesInsertsClawbackClaimableBalance() {
+	balanceID := xdr.ClaimableBalanceId{
+		Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
+		V0:   &xdr.Hash{1, 2, 3},
+	}
+	s.testOperationInserts(balanceID, xdr.OperationBody{
+		Type: xdr.OperationTypeClawbackClaimableBalance,
+		ClawbackClaimableBalanceOp: &xdr.ClawbackClaimableBalanceOp{
+			BalanceId: balanceID,
+		},
+	}, nil)
+}
+
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimableBalancesInsertsCreateClaimableBalance() {
+	balanceID := xdr.ClaimableBalanceId{
+		Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
+		V0:   &xdr.Hash{1, 2, 3},
+	}
+	s.testOperationInserts(balanceID, xdr.OperationBody{
+		Type:                     xdr.OperationTypeCreateClaimableBalance,
+		CreateClaimableBalanceOp: &xdr.CreateClaimableBalanceOp{},
+	}, &xdr.LedgerEntryChange{
+		Type: xdr.LedgerEntryChangeTypeLedgerEntryCreated,
+		Created: &xdr.LedgerEntry{
+			Data: xdr.LedgerEntryData{
+				Type: xdr.LedgerEntryTypeClaimableBalance,
+				ClaimableBalance: &xdr.ClaimableBalanceEntry{
+					BalanceId: balanceID,
+				},
+			},
+		},
+	})
+}
+
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimableBalancesInsertsTransactionsFromMeta() {
+	balanceID := xdr.ClaimableBalanceId{
+		Type: xdr.ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
+		V0:   &xdr.Hash{1, 2, 3},
+	}
+
+	// Setup the transaction
+	internalID := int64(1234)
+	txn := createTransaction(true, 1)
+	// Whatever, just an operation with no claimable balance so we can be sure it is coming from the
+	txn.Envelope.Operations()[0].Body = xdr.OperationBody{
+		Type: xdr.OperationTypeAllowTrust,
+	}
+	// Put the transaction id we want to insert in the meta
+	txn.Meta.V = 2
+	txn.Meta.V2 = &xdr.TransactionMetaV2{
+		Operations: []xdr.OperationMeta{
+			{Changes: xdr.LedgerEntryChanges{
+				{
+					Type: xdr.LedgerEntryChangeTypeLedgerEntryCreated,
+					Created: &xdr.LedgerEntry{
+						Data: xdr.LedgerEntryData{
+							Type: xdr.LedgerEntryTypeClaimableBalance,
+							ClaimableBalance: &xdr.ClaimableBalanceEntry{
+								BalanceId: balanceID,
+							},
+						},
+					},
+				}}},
+		},
+	}
+	txnID := toid.New(int32(s.sequence), int32(txn.Index), 0).ToInt64()
+
+	// Setup a q
+	s.mockQ.On("CreateHistoryClaimableBalances", mock.AnythingOfType("[]xdr.ClaimableBalanceId"), maxBatchSize).
+		Run(func(args mock.Arguments) {
+			arg := args.Get(0).([]xdr.ClaimableBalanceId)
+			s.Assert().ElementsMatch(
+				[]xdr.ClaimableBalanceId{
+					balanceID,
+				},
+				arg,
+			)
+		}).Return(map[xdr.ClaimableBalanceId]int64{
+		balanceID: internalID,
+	}, nil).Once()
+
+	// Prepare to process transactions successfully
+	s.mockQ.On("NewTransactionClaimableBalanceBatchInsertBuilder", maxBatchSize).
+		Return(s.mockTransactionBatchInsertBuilder).Once()
+	s.mockTransactionBatchAdd(txnID, internalID, nil)
+	s.mockTransactionBatchInsertBuilder.On("Exec").Return(nil).Once()
+
+	// Should not insert any operations.
+
+	// Process the transaction
+	err := s.processor.ProcessTransaction(txn)
+	s.Assert().NoError(err)
+	err = s.processor.Commit()
+	s.Assert().NoError(err)
+}
