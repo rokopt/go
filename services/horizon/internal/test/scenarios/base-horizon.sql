@@ -376,6 +376,7 @@ INSERT INTO history_operation_claimable_balances VALUES (12884905985, 1);
 INSERT INTO history_operation_claimable_balances VALUES (8589938689, 1);
 INSERT INTO history_transaction_claimable_balances VALUES (12884905984, 1);
 INSERT INTO history_transaction_claimable_balances VALUES (8589938688, 1);
+
 --
 -- Name: history_assets; Type: TABLE; Schema: public; Owner: -
 --
@@ -707,6 +708,12 @@ INSERT INTO gorp_migrations VALUES ('22_trust_lines.sql', '2019-10-31 14:19:49.1
 INSERT INTO gorp_migrations VALUES ('23_exp_asset_stats.sql', '2019-10-31 14:19:49.15222+01');
 INSERT INTO gorp_migrations VALUES ('24_accounts.sql', '2019-10-31 14:19:49.160844+01');
 INSERT INTO gorp_migrations VALUES ('25_expingest_rename_columns.sql', '2019-10-31 14:19:49.163717+01');
+INSERT INTO gorp_migrations VALUES ('33_remove_unused.sql', '2019-11-30 10:19:49.163718+01');
+INSERT INTO gorp_migrations VALUES ('34_fee_bump_transactions.sql', '2019-11-30 11:19:49.163718+01');
+INSERT INTO gorp_migrations VALUES ('35_drop_participant_id.sql', '2019-11-30 14:19:49.163728+01');
+INSERT INTO gorp_migrations VALUES ('37_add_tx_set_operation_count_to_ledgers.sql', '2019-11-30 12:19:49.163728+01');
+INSERT INTO gorp_migrations VALUES ('41_add_sponsor_to_state_tables.sql', '2019-11-30 13:19:49.163718+01');
+INSERT INTO gorp_migrations VALUES ('44_add_claimable_balances_history.sql', '2019-11-30 14:19:49.163718+01');
 
 
 --
@@ -1355,3 +1362,32 @@ ALTER TABLE ONLY history_trades
 -- PostgreSQL database dump complete
 --
 
+
+-- needed for migrations to work
+ALTER TABLE accounts ADD sponsor TEXT;
+CREATE INDEX accounts_by_sponsor ON accounts USING BTREE(sponsor);
+
+ALTER TABLE accounts_data ADD sponsor TEXT;
+CREATE INDEX accounts_data_by_sponsor ON accounts_data USING BTREE(sponsor);
+
+ALTER TABLE trust_lines ADD sponsor TEXT;
+CREATE INDEX trust_lines_by_sponsor ON trust_lines USING BTREE(sponsor);
+
+ALTER TABLE offers ADD sponsor TEXT;
+CREATE INDEX offers_by_sponsor ON offers USING BTREE(sponsor);
+
+ALTER TABLE history_operation_participants
+    DROP COLUMN id;
+
+ALTER TABLE history_transaction_participants
+    DROP COLUMN id;
+
+DROP TABLE asset_stats cascade;
+
+DROP INDEX exp_asset_stats_by_code;
+
+DROP INDEX index_history_transactions_on_id;
+
+DROP INDEX index_history_ledgers_on_id;
+
+DROP INDEX asset_by_code;
