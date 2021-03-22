@@ -108,16 +108,16 @@ func (handler GetOperationsHandler) GetResourcePage(w HeaderWriter, r *http.Requ
 	switch {
 	case qp.AccountID != "":
 		query.ForAccount(qp.AccountID)
-	case qp.LedgerID > 0:
-		query.ForLedger(int32(qp.LedgerID))
-	case qp.TransactionHash != "":
-		query.ForTransaction(qp.TransactionHash)
 	case qp.ClaimableBalanceID != "":
 		cbID, parseErr := qp.BalanceID()
 		if parseErr != nil {
 			return nil, parseErr
 		}
 		query.ForClaimableBalance(cbID)
+	case qp.LedgerID > 0:
+		query.ForLedger(int32(qp.LedgerID))
+	case qp.TransactionHash != "":
+		query.ForTransaction(qp.TransactionHash)
 	}
 	// When querying operations for transaction return both successful
 	// and failed operations. We assume that because the user is querying

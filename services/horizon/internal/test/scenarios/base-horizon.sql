@@ -335,6 +335,47 @@ CREATE TABLE history_accounts (
 );
 
 
+-- history_claimable_balances (manually added)
+CREATE SEQUENCE history_claimable_balances_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE TABLE history_claimable_balances (
+    id bigint NOT NULL DEFAULT nextval('history_claimable_balances_id_seq'::regclass),
+    claimable_balance_id text NOT NULL
+);
+
+CREATE UNIQUE INDEX "index_history_claimable_balances_on_id" ON history_claimable_balances USING btree (id);
+CREATE UNIQUE INDEX "index_history_claimable_balances_on_claimable_balance_id" ON history_claimable_balances USING btree (claimable_balance_id);
+
+CREATE TABLE history_operation_claimable_balances (
+    history_operation_id bigint NOT NULL,
+    history_claimable_balance_id bigint NOT NULL
+);
+
+CREATE UNIQUE INDEX "index_history_operation_claimable_balances_on_ids" ON history_operation_claimable_balances USING btree (history_operation_id , history_claimable_balance_id);
+CREATE INDEX "index_history_operation_claimable_balances_on_operation_id" ON history_operation_claimable_balances USING btree (history_operation_id);
+
+CREATE TABLE history_transaction_claimable_balances (
+    history_transaction_id bigint NOT NULL,
+    history_claimable_balance_id bigint NOT NULL
+);
+
+CREATE UNIQUE INDEX "index_history_transaction_claimable_balances_on_ids" ON history_transaction_claimable_balances USING btree (history_transaction_id , history_claimable_balance_id);
+CREATE INDEX "index_history_transaction_claimable_balances_on_transaction_id" ON history_transaction_claimable_balances USING btree (history_transaction_id);
+
+
+-- AAAAABeIJvv+M54fXFNBfG/t/iwF6L7BQwMUPsRrOJgbCcP5 is base64 for the hex-encoded claimable balance id 00000000178826fbfe339e1f5c53417c6fedfe2c05e8bec14303143ec46b38981b09c3f9
+INSERT INTO history_claimable_balances VALUES (1, 'AAAAABeIJvv+M54fXFNBfG/t/iwF6L7BQwMUPsRrOJgbCcP5');
+SELECT pg_catalog.setval('history_claimable_balances_id_seq', 1, true);
+-- The operations/transactions are going to be unrelated to claimable balances, but it doesn't matter for testing
+INSERT INTO history_operation_claimable_balances VALUES (12884905985, 1);
+INSERT INTO history_operation_claimable_balances VALUES (8589938689, 1);
+INSERT INTO history_transaction_claimable_balances VALUES (12884905984, 1);
+INSERT INTO history_transaction_claimable_balances VALUES (8589938688, 1);
 --
 -- Name: history_assets; Type: TABLE; Schema: public; Owner: -
 --

@@ -134,7 +134,7 @@ func (handler GetTransactionsHandler) GetResourcePage(w HeaderWriter, r *http.Re
 		if err != nil {
 			return nil, err
 		}
-		*cbID = cb
+		cbID = &cb
 	}
 	records, err := loadTransactionRecords(historyQ, qp.AccountID, cbID, int32(qp.LedgerID), qp.IncludeFailedTransactions, pq)
 	if err != nil {
