@@ -153,9 +153,5 @@ func isAmount(str string) bool {
 func isClaimableBalanceID(str string) bool {
 	var cbID xdr.ClaimableBalanceId
 	err := xdr.SafeUnmarshalHex(str, &cbID)
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }

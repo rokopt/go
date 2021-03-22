@@ -130,7 +130,8 @@ func (handler GetTransactionsHandler) GetResourcePage(w HeaderWriter, r *http.Re
 
 	var cbID *xdr.ClaimableBalanceId
 	if qp.ClaimableBalanceID != "" {
-		cb, err := qp.BalanceID()
+		var cb xdr.ClaimableBalanceId
+		cb, err = qp.BalanceID()
 		if err != nil {
 			return nil, err
 		}
