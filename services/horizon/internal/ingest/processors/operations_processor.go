@@ -693,7 +693,6 @@ func operationsParticipants(transaction ingest.LedgerTransaction, sequence uint3
 // ClaimableBalances returns the accounts taking part in the operation.
 func (operation *transactionOperationWrapper) ClaimableBalances() ([]xdr.ClaimableBalanceId, error) {
 	cbs := []xdr.ClaimableBalanceId{}
-	op := operation.operation
 
 	switch operation.OperationType() {
 	case xdr.OperationTypeCreateClaimableBalance:
@@ -722,8 +721,6 @@ func (operation *transactionOperationWrapper) ClaimableBalances() ([]xdr.Claimab
 	case xdr.OperationTypeClawbackClaimableBalance:
 		op := operation.operation.Body.MustClawbackClaimableBalanceOp()
 		cbs = append(cbs, op.BalanceId)
-	default:
-		return cbs, fmt.Errorf("Unknown operation type: %s", op.Body.Type)
 	}
 
 	return dedupeClaimableBalances(cbs)

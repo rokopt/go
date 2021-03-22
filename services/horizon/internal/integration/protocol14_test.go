@@ -177,11 +177,17 @@ func TestHappyClaimableBalances(t *testing.T) {
 		assert.NoError(t, err)
 		t.Log("  claimed")
 
-		// Ensure the claimable balance is gone now.
+		// Ensure the claimable balance is gone now ...
 		balances, err = client.ClaimableBalances(sdk.ClaimableBalanceRequest{Sponsor: a.Address()})
 		assert.NoError(t, err)
 		assert.Len(t, balances.Embedded.Records, 0)
 		t.Log("  gone")
+
+		// ... but that its operations and transactions can still be optained
+		transactions, err := client.Transactions(sdk.TransactionRequest{
+			ForClaimableBalance: claim.BalanceID,
+		})
+		assert.Len(t, transactions, 2)
 
 		// Ensure the actual account has a higher balance, now!
 		request := sdk.AccountRequest{AccountID: b.Address()}
