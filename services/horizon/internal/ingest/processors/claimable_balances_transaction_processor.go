@@ -244,7 +244,11 @@ func (p *ClaimableBalancesTransactionProcessor) loadClaimableBalanceIDs(claimabl
 	}
 
 	for _, id := range ids {
-		internalID, ok := toInternalID[id]
+		b64ID, err := xdr.MarshalBase64(id)
+		if err != nil {
+			return errors.New("error parsing BalanceID")
+		}
+		internalID, ok := toInternalID[b64ID]
 		if !ok {
 			// TODO: Figure out the right way to convert the id to a string here. %v will be nonsense.
 			return errors.Errorf("no internal id found for claimable balance %v", id)

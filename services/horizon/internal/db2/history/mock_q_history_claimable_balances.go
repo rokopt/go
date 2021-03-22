@@ -11,9 +11,9 @@ type MockQHistoryClaimableBalances struct {
 	mock.Mock
 }
 
-func (m *MockQHistoryClaimableBalances) CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, maxBatchSize int) (map[xdr.ClaimableBalanceId]int64, error) {
+func (m *MockQHistoryClaimableBalances) CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, maxBatchSize int) (map[string]int64, error) {
 	a := m.Called(ids, maxBatchSize)
-	return a.Get(0).(map[xdr.ClaimableBalanceId]int64), a.Error(1)
+	return a.Get(0).(map[string]int64), a.Error(1)
 }
 
 func (m *MockQHistoryClaimableBalances) NewTransactionClaimableBalanceBatchInsertBuilder(maxBatchSize int) TransactionClaimableBalanceBatchInsertBuilder {

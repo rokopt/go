@@ -80,6 +80,8 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) testOperationInse
 		ledgerSequence: s.sequence,
 	}).ID()
 
+	b64ID, _ := xdr.MarshalBase64(balanceID)
+
 	// Setup a q
 	s.mockQ.On("CreateHistoryClaimableBalances", mock.AnythingOfType("[]xdr.ClaimableBalanceId"), maxBatchSize).
 		Run(func(args mock.Arguments) {
@@ -90,8 +92,8 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) testOperationInse
 				},
 				arg,
 			)
-		}).Return(map[xdr.ClaimableBalanceId]int64{
-		balanceID: internalID,
+		}).Return(map[string]int64{
+		b64ID: internalID,
 	}, nil).Once()
 
 	// Prepare to process transactions successfully
@@ -193,6 +195,7 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimab
 	txnID := toid.New(int32(s.sequence), int32(txn.Index), 0).ToInt64()
 
 	// Setup a q
+	b64ID, _ := xdr.MarshalBase64(balanceID)
 	s.mockQ.On("CreateHistoryClaimableBalances", mock.AnythingOfType("[]xdr.ClaimableBalanceId"), maxBatchSize).
 		Run(func(args mock.Arguments) {
 			arg := args.Get(0).([]xdr.ClaimableBalanceId)
@@ -202,8 +205,8 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimab
 				},
 				arg,
 			)
-		}).Return(map[xdr.ClaimableBalanceId]int64{
-		balanceID: internalID,
+		}).Return(map[string]int64{
+		b64ID: internalID,
 	}, nil).Once()
 
 	// Prepare to process transactions successfully

@@ -13,14 +13,14 @@ import (
 
 // QHistoryClaimableBalances defines account related queries.
 type QHistoryClaimableBalances interface {
-	CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, batchSize int) (map[xdr.ClaimableBalanceId]int64, error)
+	CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, batchSize int) (map[string]int64, error)
 	NewOperationClaimableBalanceBatchInsertBuilder(maxBatchSize int) OperationClaimableBalanceBatchInsertBuilder
 	NewTransactionClaimableBalanceBatchInsertBuilder(maxBatchSize int) TransactionClaimableBalanceBatchInsertBuilder
 }
 
 // CreateHistoryClaimableBalances creates rows in the history_claimable_balances table for a given list of ids.
 // CreateHistoryClaimableBalances returns a mapping of id to its corresponding internal id in the history_claimable_balances table
-func (q *Q) CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, batchSize int) (map[xdr.ClaimableBalanceId]int64, error) {
+func (q *Q) CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, batchSize int) (map[string]int64, error) {
 	builder := &db.BatchInsertBuilder{
 		Table:        q.GetTable("history_claimable_balances"),
 		MaxBatchSize: batchSize,
@@ -47,7 +47,7 @@ func (q *Q) CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, batchSi
 	}
 
 	var cbs []HistoryClaimableBalance
-	toInternalID := map[xdr.ClaimableBalanceId]int64{}
+	toInternalID := map[string]int64{}
 	const selectBatchSize = 10000
 
 	for i := 0; i < len(ids); i += selectBatchSize {
@@ -62,7 +62,12 @@ func (q *Q) CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, batchSi
 		}
 
 		for _, cb := range cbs {
-			toInternalID[cb.BalanceID] = cb.InternalID
+
+			b64ID, err := xdr.MarshalBase64(cb.BalanceID)
+			if err != nil {
+				return nil, errors.Wrap(err, "error parsing BalanceID")
+			}
+			toInternalID[b64ID] = cb.InternalID
 		}
 	}
 
