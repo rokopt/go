@@ -174,21 +174,20 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimab
 		Type: xdr.OperationTypeAllowTrust,
 	}
 	// Put the transaction id we want to insert in the meta
-	txn.Meta.V = 2
-	txn.Meta.V2 = &xdr.TransactionMetaV2{
-		Operations: []xdr.OperationMeta{
-			{Changes: xdr.LedgerEntryChanges{
-				{
-					Type: xdr.LedgerEntryChangeTypeLedgerEntryCreated,
-					Created: &xdr.LedgerEntry{
-						Data: xdr.LedgerEntryData{
-							Type: xdr.LedgerEntryTypeClaimableBalance,
-							ClaimableBalance: &xdr.ClaimableBalanceEntry{
-								BalanceId: balanceID,
-							},
+	txn.Meta.V = 0
+	txn.Meta.Operations = &[]xdr.OperationMeta{
+		{Changes: xdr.LedgerEntryChanges{
+			{
+				Type: xdr.LedgerEntryChangeTypeLedgerEntryCreated,
+				Created: &xdr.LedgerEntry{
+					Data: xdr.LedgerEntryData{
+						Type: xdr.LedgerEntryTypeClaimableBalance,
+						ClaimableBalance: &xdr.ClaimableBalanceEntry{
+							BalanceId: balanceID,
 						},
 					},
-				}}},
+				},
+			}},
 		},
 	}
 	txnID := toid.New(int32(s.sequence), int32(txn.Index), 0).ToInt64()
@@ -212,6 +211,10 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimab
 		Return(s.mockTransactionBatchInsertBuilder).Once()
 	s.mockTransactionBatchAdd(txnID, internalID, nil)
 	s.mockTransactionBatchInsertBuilder.On("Exec").Return(nil).Once()
+
+	s.mockQ.On("NewOperationClaimableBalanceBatchInsertBuilder", maxBatchSize).
+		Return(s.mockOperationBatchInsertBuilder).Once()
+	s.mockOperationBatchInsertBuilder.On("Exec").Return(nil).Once()
 
 	// Should not insert any operations.
 
