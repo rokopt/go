@@ -713,7 +713,7 @@ INSERT INTO gorp_migrations VALUES ('34_fee_bump_transactions.sql', '2019-11-30 
 INSERT INTO gorp_migrations VALUES ('35_drop_participant_id.sql', '2019-11-30 14:19:49.163728+01');
 INSERT INTO gorp_migrations VALUES ('37_add_tx_set_operation_count_to_ledgers.sql', '2019-11-30 12:19:49.163728+01');
 INSERT INTO gorp_migrations VALUES ('41_add_sponsor_to_state_tables.sql', '2019-11-30 13:19:49.163718+01');
-INSERT INTO gorp_migrations VALUES ('44_add_claimable_balances_history.sql', '2019-11-30 14:19:49.163718+01');
+INSERT INTO gorp_migrations VALUES ('45_add_claimable_balances_history.sql', '2019-11-30 14:19:49.163718+01');
 
 
 --
