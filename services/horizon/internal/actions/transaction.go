@@ -58,7 +58,7 @@ func (handler GetTransactionByHashHandler) GetResource(w HeaderWriter, r *http.R
 // TransactionsQuery query struct for transactions end-points
 type TransactionsQuery struct {
 	AccountID                 string `schema:"account_id" valid:"accountID,optional"`
-	ClaimableBalanceID        string `schema:"claimable_balance_id valid:"claimableBalanceID,optional""`
+	ClaimableBalanceID        string `schema:"claimable_balance_id" valid:"claimableBalanceID,optional"`
 	IncludeFailedTransactions bool   `schema:"include_failed" valid:"-"`
 	LedgerID                  uint32 `schema:"ledger_id" valid:"-"`
 }
