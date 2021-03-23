@@ -1,5 +1,7 @@
 -- +migrate Up
 
+UPDATE claimable_balances SET id = encode(decode(id, 'base64'), 'hex');
+
 -- TODO: Do we need to start from existing count(claimable_balances) and backfill?
 CREATE SEQUENCE history_claimable_balances_id_seq
     START WITH 1
@@ -33,6 +35,8 @@ CREATE UNIQUE INDEX "index_history_transaction_claimable_balances_on_ids" ON his
 CREATE INDEX "index_history_transaction_claimable_balances_on_transaction_id" ON history_transaction_claimable_balances USING btree (history_transaction_id);
 
 -- +migrate Down
+
+UPDATE claimable_balances SET id = encode(decode(id, 'hex'), 'base64');
 
 DROP INDEX "index_history_claimable_balances_on_id";
 DROP INDEX "index_history_claimable_balances_on_claimable_balance_id";
