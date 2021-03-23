@@ -59,18 +59,27 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestEmptyClaimabl
 	s.Assert().NoError(err)
 }
 
-func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) testOperationInserts(balanceID xdr.ClaimableBalanceId, body xdr.OperationBody, change *xdr.LedgerEntryChange) {
+func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) testOperationInserts(balanceID xdr.ClaimableBalanceId, body xdr.OperationBody) {
 	// Setup the transaction
 	internalID := int64(1234)
 	txn := createTransaction(true, 1)
 	txn.Envelope.Operations()[0].Body = body
-	if change != nil {
-		txn.Meta.V = 2
-		txn.Meta.V2 = &xdr.TransactionMetaV2{
-			Operations: []xdr.OperationMeta{
-				{Changes: xdr.LedgerEntryChanges{*change}},
-			},
-		}
+
+	if body.Type == xdr.OperationTypeCreateClaimableBalance {
+		// For insert test
+		txn.Result.Result.Result.Results =
+			&[]xdr.OperationResult{
+				{
+					Code: xdr.OperationResultCodeOpInner,
+					Tr: &xdr.OperationResultTr{
+						Type: xdr.OperationTypeCreateClaimableBalance,
+						CreateClaimableBalanceResult: &xdr.CreateClaimableBalanceResult{
+							Code:      xdr.CreateClaimableBalanceResultCodeCreateClaimableBalanceSuccess,
+							BalanceId: &balanceID,
+						},
+					},
+				},
+			}
 	}
 	txnID := toid.New(int32(s.sequence), int32(txn.Index), 0).ToInt64()
 	opID := (&transactionOperationWrapper{
@@ -125,7 +134,7 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimab
 		ClaimClaimableBalanceOp: &xdr.ClaimClaimableBalanceOp{
 			BalanceId: balanceID,
 		},
-	}, nil)
+	})
 }
 
 func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimableBalancesInsertsClawbackClaimableBalance() {
@@ -138,7 +147,7 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimab
 		ClawbackClaimableBalanceOp: &xdr.ClawbackClaimableBalanceOp{
 			BalanceId: balanceID,
 		},
-	}, nil)
+	})
 }
 
 func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimableBalancesInsertsCreateClaimableBalance() {
@@ -149,16 +158,6 @@ func (s *ClaimableBalancesTransactionProcessorTestSuiteLedger) TestIngestClaimab
 	s.testOperationInserts(balanceID, xdr.OperationBody{
 		Type:                     xdr.OperationTypeCreateClaimableBalance,
 		CreateClaimableBalanceOp: &xdr.CreateClaimableBalanceOp{},
-	}, &xdr.LedgerEntryChange{
-		Type: xdr.LedgerEntryChangeTypeLedgerEntryCreated,
-		Created: &xdr.LedgerEntry{
-			Data: xdr.LedgerEntryData{
-				Type: xdr.LedgerEntryTypeClaimableBalance,
-				ClaimableBalance: &xdr.ClaimableBalanceEntry{
-					BalanceId: balanceID,
-				},
-			},
-		},
 	})
 }
 
