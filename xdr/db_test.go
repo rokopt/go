@@ -103,7 +103,7 @@ var _ = Describe("sql.Scanner implementations", func() {
 
 			Expect(scanned).To(Equal(val))
 		},
-		Entry("default", "AAAAAAECAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", ClaimableBalanceId{
+		Entry("default", "000000000102030000000000000000000000000000000000000000000000000000000000", ClaimableBalanceId{
 			Type: ClaimableBalanceIdTypeClaimableBalanceIdTypeV0,
 			V0:   &Hash{1, 2, 3},
 		}, true),
@@ -132,8 +132,8 @@ var _ = Describe("sql.Scanner implementations", func() {
 			err := dest.(sql.Scanner).Scan(in)
 			Expect(err).To(BeNil())
 		},
-		Entry("ClaimableBalanace", &ClaimableBalanceId{},
-			"AAAAAAECAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+		Entry("ClaimableBalance", &ClaimableBalanceId{},
+			"000000000102030000000000000000000000000000000000000000000000000000000000"),
 		Entry("ClaimablPredicate", &ClaimPredicate{},
 			"AAAAAA=="),
 		Entry("LedgerEntryChanges", &LedgerEntryChanges{},

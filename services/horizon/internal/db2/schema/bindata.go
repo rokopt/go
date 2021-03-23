@@ -40,6 +40,7 @@
 // migrations/43_add_claimable_balances_flags.sql (145B)
 // migrations/44_asset_stat_accounts_and_balances.sql (439B)
 // migrations/45_add_claimable_balances_history.sql (2.246kB)
+// migrations/46_convert_claimable_balance_ids_to_hex.sql (412B)
 // migrations/4_add_protocol_version.sql (188B)
 // migrations/5_create_trades_table.sql (1.1kB)
 // migrations/6_create_assets_table.sql (366B)
@@ -915,6 +916,26 @@ func migrations45_add_claimable_balances_historySql() (*asset, error) {
 	return a, nil
 }
 
+var _migrations46_convert_claimable_balance_ids_to_hexSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xd2\xd5\x55\xd0\xce\xcd\x4c\x2f\x4a\x2c\x49\x55\x08\x2d\xe0\xe2\x0a\x0d\x70\x71\x0c\x71\x55\x48\xce\x49\xcc\xcc\x4d\x4c\xca\x49\x8d\x4f\x4a\xcc\x49\xcc\x4b\x4e\x2d\x56\x08\x76\x0d\x51\xc8\x4c\x51\xb0\x55\x48\xcd\x4b\xce\x4f\x49\xd5\x48\x49\x05\x53\x99\x29\x3a\x0a\xea\x49\x89\xc5\xa9\x66\x26\xea\x9a\x3a\x0a\xea\x19\xa9\x15\xea\x9a\xd6\x30\x73\x32\x32\x8b\x4b\xf2\x8b\x2a\xe3\x71\x98\x87\x21\x1c\x8f\xc5\x06\x6c\x8a\xb0\xda\xc9\x85\xec\x19\x97\xfc\xf2\x3c\x72\xbd\x03\x36\x0f\xc9\x0a\x7a\x78\x07\xd3\x4e\x2e\x40\x00\x00\x00\xff\xff\x77\x96\x33\xda\x9c\x01\x00\x00")
+
+func migrations46_convert_claimable_balance_ids_to_hexSqlBytes() ([]byte, error) {
+	return bindataRead(
+		_migrations46_convert_claimable_balance_ids_to_hexSql,
+		"migrations/46_convert_claimable_balance_ids_to_hex.sql",
+	)
+}
+
+func migrations46_convert_claimable_balance_ids_to_hexSql() (*asset, error) {
+	bytes, err := migrations46_convert_claimable_balance_ids_to_hexSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "migrations/46_convert_claimable_balance_ids_to_hex.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xeb, 0x82, 0x9f, 0xe1, 0x4c, 0xd2, 0xa5, 0xec, 0xd, 0x7f, 0x7c, 0x62, 0xbd, 0x23, 0x3e, 0xe1, 0xac, 0xa9, 0xb9, 0x62, 0xf1, 0x8d, 0xe8, 0x61, 0x7, 0x9e, 0xc5, 0xa3, 0xbc, 0x8b, 0xbc, 0xa0}}
+	return a, nil
+}
+
 var _migrations4_add_protocol_versionSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x84\xcd\xb1\x0a\xc2\x30\x10\x06\xe0\x3d\x4f\xf1\xef\x52\x70\xef\x14\x4d\x9d\xce\x44\x4a\x32\x38\x15\xd1\xa3\x06\x6a\xae\x5c\x82\xe2\xdb\xbb\xba\x88\x4f\xf0\x75\x1d\x36\x8f\x3c\xeb\xa5\x31\xd2\x6a\x2c\xc5\x61\x44\xb4\x3b\x1a\x10\x3c\x9d\x71\xcf\xb5\x89\xbe\xa7\x85\x6f\x33\x6b\x85\x01\xac\x73\xd8\x07\x4a\x47\x8f\x55\xa5\xc9\x55\x96\xe9\xc9\x5a\xb3\x14\xe4\xd2\x78\x66\x85\x1b\x0e\x36\x51\xc4\x16\x3e\x44\xf8\x44\xd4\x1b\xf3\x6d\x39\x79\x95\xff\x9a\x1b\xc3\xe9\x97\xd5\x9b\x4f\x00\x00\x00\xff\xff\x83\xbb\x30\x2e\xbc\x00\x00\x00")
 
 func migrations4_add_protocol_versionSqlBytes() ([]byte, error) {
@@ -1186,6 +1207,7 @@ var _bindata = map[string]func() (*asset, error){
 	"migrations/43_add_claimable_balances_flags.sql":                     migrations43_add_claimable_balances_flagsSql,
 	"migrations/44_asset_stat_accounts_and_balances.sql":                 migrations44_asset_stat_accounts_and_balancesSql,
 	"migrations/45_add_claimable_balances_history.sql":                   migrations45_add_claimable_balances_historySql,
+	"migrations/46_convert_claimable_balance_ids_to_hex.sql":             migrations46_convert_claimable_balance_ids_to_hexSql,
 	"migrations/4_add_protocol_version.sql":                              migrations4_add_protocol_versionSql,
 	"migrations/5_create_trades_table.sql":                               migrations5_create_trades_tableSql,
 	"migrations/6_create_assets_table.sql":                               migrations6_create_assets_tableSql,
@@ -1277,6 +1299,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"43_add_claimable_balances_flags.sql":                     &bintree{migrations43_add_claimable_balances_flagsSql, map[string]*bintree{}},
 		"44_asset_stat_accounts_and_balances.sql":                 &bintree{migrations44_asset_stat_accounts_and_balancesSql, map[string]*bintree{}},
 		"45_add_claimable_balances_history.sql":                   &bintree{migrations45_add_claimable_balances_historySql, map[string]*bintree{}},
+		"46_convert_claimable_balance_ids_to_hex.sql":             &bintree{migrations46_convert_claimable_balance_ids_to_hexSql, map[string]*bintree{}},
 		"4_add_protocol_version.sql":                              &bintree{migrations4_add_protocol_versionSql, map[string]*bintree{}},
 		"5_create_trades_table.sql":                               &bintree{migrations5_create_trades_tableSql, map[string]*bintree{}},
 		"6_create_assets_table.sql":                               &bintree{migrations6_create_assets_tableSql, map[string]*bintree{}},

@@ -368,8 +368,7 @@ CREATE UNIQUE INDEX "index_history_transaction_claimable_balances_on_ids" ON his
 CREATE INDEX "index_history_transaction_claimable_balances_on_transaction_id" ON history_transaction_claimable_balances USING btree (history_transaction_id);
 
 
--- AAAAABeIJvv+M54fXFNBfG/t/iwF6L7BQwMUPsRrOJgbCcP5 is base64 for the hex-encoded claimable balance id 00000000178826fbfe339e1f5c53417c6fedfe2c05e8bec14303143ec46b38981b09c3f9
-INSERT INTO history_claimable_balances VALUES (1, 'AAAAABeIJvv+M54fXFNBfG/t/iwF6L7BQwMUPsRrOJgbCcP5');
+INSERT INTO history_claimable_balances VALUES (1, '00000000178826fbfe339e1f5c53417c6fedfe2c05e8bec14303143ec46b38981b09c3f9');
 SELECT pg_catalog.setval('history_claimable_balances_id_seq', 1, true);
 -- The operations/transactions are going to be unrelated to claimable balances, but it doesn't matter for testing
 INSERT INTO history_operation_claimable_balances VALUES (12884905985, 1);
@@ -714,6 +713,7 @@ INSERT INTO gorp_migrations VALUES ('35_drop_participant_id.sql', '2019-11-30 14
 INSERT INTO gorp_migrations VALUES ('37_add_tx_set_operation_count_to_ledgers.sql', '2019-11-30 12:19:49.163728+01');
 INSERT INTO gorp_migrations VALUES ('41_add_sponsor_to_state_tables.sql', '2019-11-30 13:19:49.163718+01');
 INSERT INTO gorp_migrations VALUES ('45_add_claimable_balances_history.sql', '2019-11-30 14:19:49.163718+01');
+INSERT INTO gorp_migrations VALUES ('46_convert_claimable_balance_ids_to_hex.sql', '2020-03-23 17:06:00.000000+00');
 
 
 --

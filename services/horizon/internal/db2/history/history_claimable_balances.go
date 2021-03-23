@@ -62,12 +62,11 @@ func (q *Q) CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, batchSi
 		}
 
 		for _, cb := range cbs {
-
-			b64ID, err := xdr.MarshalBase64(cb.BalanceID)
+			hexID, err := xdr.MarshalHex(cb.BalanceID)
 			if err != nil {
 				return nil, errors.Wrap(err, "error parsing BalanceID")
 			}
-			toInternalID[b64ID] = cb.InternalID
+			toInternalID[hexID] = cb.InternalID
 		}
 	}
 
@@ -91,8 +90,8 @@ func (q *Q) ClaimableBalancesByIDs(dest interface{}, ids []xdr.ClaimableBalanceI
 }
 
 // ClaimableBalanceByID loads a row from `history_claimable_balances`, by claimable_balance_id
-func (q *Q) ClaimableBalanceByID(dest interface{}, cbIDy xdr.ClaimableBalanceId) error {
-	sql := selectHistoryClaimableBalance.Limit(1).Where("hcb.claimable_balance_id = ?", cbIDy)
+func (q *Q) ClaimableBalanceByID(dest interface{}, id xdr.ClaimableBalanceId) error {
+	sql := selectHistoryClaimableBalance.Limit(1).Where("hcb.claimable_balance_id = ?", id)
 	return q.Get(dest, sql)
 }
 
