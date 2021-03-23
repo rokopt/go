@@ -79,7 +79,7 @@ func (q *TransactionsQ) ForAccount(aid string) *TransactionsQ {
 func (q *TransactionsQ) ForClaimableBalance(cbID xdr.ClaimableBalanceId) *TransactionsQ {
 
 	var hCB HistoryClaimableBalance
-	q.Err = q.parent.ClaimableBalancesByID(&hCB, cbID)
+	q.Err = q.parent.ClaimableBalanceByID(&hCB, cbID)
 	if q.Err != nil {
 		return q
 	}

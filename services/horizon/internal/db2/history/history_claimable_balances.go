@@ -90,8 +90,8 @@ func (q *Q) ClaimableBalancesByIDs(dest interface{}, ids []xdr.ClaimableBalanceI
 	return q.Select(dest, sql)
 }
 
-// ClaimableBalancesByID loads a row from `history_claimable_balances`, by claimable_balance_id
-func (q *Q) ClaimableBalancesByID(dest interface{}, cbIDy xdr.ClaimableBalanceId) error {
+// ClaimableBalanceByID loads a row from `history_claimable_balances`, by claimable_balance_id
+func (q *Q) ClaimableBalanceByID(dest interface{}, cbIDy xdr.ClaimableBalanceId) error {
 	sql := selectHistoryClaimableBalance.Limit(1).Where("hcb.claimable_balance_id = ?", cbIDy)
 	return q.Get(dest, sql)
 }
