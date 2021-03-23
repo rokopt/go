@@ -80,8 +80,8 @@ func (q TransactionsQuery) BalanceID() (xdr.ClaimableBalanceId, error) {
 func (qp TransactionsQuery) Validate() error {
 	filters, err := countNonEmpty(
 		qp.AccountID,
-		qp.LedgerID,
 		qp.ClaimableBalanceID,
+		qp.LedgerID,
 	)
 
 	if err != nil {

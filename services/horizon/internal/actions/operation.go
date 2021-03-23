@@ -41,6 +41,7 @@ type OperationsQuery struct {
 func (qp OperationsQuery) Validate() error {
 	filters, err := countNonEmpty(
 		qp.AccountID,
+		qp.ClaimableBalanceID,
 		qp.LedgerID,
 		qp.TransactionHash,
 	)
