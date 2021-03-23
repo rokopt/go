@@ -66,7 +66,7 @@ func (q OperationsQuery) BalanceID() (xdr.ClaimableBalanceId, error) {
 	if err != nil {
 		return balanceID, supportProblem.MakeInvalidFieldProblem(
 			"claimable_balance_id",
-			fmt.Errorf("Invalid claimable balance ID"),
+			errors.New("Invalid claimable balance ID"),
 		)
 	}
 	return balanceID, nil
