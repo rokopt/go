@@ -86,14 +86,6 @@ func claimableBalancesForTransaction(
 	}
 	cbs = append(cbs, c...)
 
-	// TODO: Note we should re-use the info we found when adding operations, instead
-	// of duplicating the work. Also do it for participants processor.
-	c, err = claimableBalancesForChanges(transaction.FeeChanges)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not determine operation claimable balances")
-	}
-	cbs = append(cbs, c...)
-
 	for opi, op := range transaction.Envelope.Operations() {
 		operation := transactionOperationWrapper{
 			index:          uint32(opi),
