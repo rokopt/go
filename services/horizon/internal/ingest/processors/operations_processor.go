@@ -696,24 +696,10 @@ func (operation *transactionOperationWrapper) ClaimableBalances() ([]xdr.Claimab
 
 	switch operation.OperationType() {
 	case xdr.OperationTypeCreateClaimableBalance:
-		// Get the ledger entry, and look through that to find the balance id.
-		changes, err := operation.transaction.GetOperationChanges(operation.index)
-		if err != nil {
-			return cbs, fmt.Errorf("Failed to find id for claimable balance: %d", operation.index)
-		}
-		found := false
-		for _, change := range changes {
-			if change.Pre != nil ||
-				change.Post == nil ||
-				change.Type != xdr.LedgerEntryTypeClaimableBalance {
-				continue
-			}
-			found = true
-			cb := change.Post.Data.MustClaimableBalance()
-			cbs = append(cbs, cb.BalanceId)
-		}
-		if !found {
-			return cbs, fmt.Errorf("Failed to find id for claimable balance: %d", operation.index)
+		op := operation.OperationResult().MustCreateClaimableBalanceResult()
+		if op.BalanceId != nil {
+			// Might be nil if the creation failed.
+			cbs = append(cbs, *op.BalanceId)
 		}
 	case xdr.OperationTypeClaimClaimableBalance:
 		op := operation.operation.Body.MustClaimClaimableBalanceOp()
