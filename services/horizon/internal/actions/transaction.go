@@ -1,7 +1,6 @@
 package actions
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/stellar/go/protocols/horizon"
@@ -63,19 +62,6 @@ type TransactionsQuery struct {
 	LedgerID                  uint32 `schema:"ledger_id" valid:"-"`
 }
 
-// BalanceID returns the xdr.ClaimableBalanceId from the request query
-func (q TransactionsQuery) BalanceID() (xdr.ClaimableBalanceId, error) {
-	var balanceID xdr.ClaimableBalanceId
-	err := xdr.SafeUnmarshalHex(q.ClaimableBalanceID, &balanceID)
-	if err != nil {
-		return balanceID, supportProblem.MakeInvalidFieldProblem(
-			"claimable_balance_id",
-			fmt.Errorf("Invalid claimable balance ID"),
-		)
-	}
-	return balanceID, nil
-}
-
 // Validate runs extra validations on query parameters
 func (qp TransactionsQuery) Validate() error {
 	filters, err := countNonEmpty(
@@ -131,7 +117,7 @@ func (handler GetTransactionsHandler) GetResourcePage(w HeaderWriter, r *http.Re
 	var cbID *xdr.ClaimableBalanceId
 	if qp.ClaimableBalanceID != "" {
 		var cb xdr.ClaimableBalanceId
-		cb, err = qp.BalanceID()
+		cb, err = balanceIDHex2XDR(qp.ClaimableBalanceID, "claimable_balance_id")
 		if err != nil {
 			return nil, err
 		}
