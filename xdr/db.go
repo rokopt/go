@@ -44,6 +44,7 @@ func (t Asset) Value() (driver.Value, error) {
 }
 
 // Scan reads from src into a ClaimableBalanceId
+// This method decodes values from hex.
 func (c *ClaimableBalanceId) Scan(src interface{}) error {
 	return safeHexScan(src, c)
 }
