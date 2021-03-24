@@ -80,12 +80,6 @@ func claimableBalancesForTransaction(
 	transaction ingest.LedgerTransaction,
 ) ([]xdr.ClaimableBalanceId, error) {
 	cbs := []xdr.ClaimableBalanceId{}
-	c, err := claimableBalancesForMeta(transaction.Meta)
-	if err != nil {
-		return nil, err
-	}
-	cbs = append(cbs, c...)
-
 	for opi, op := range transaction.Envelope.Operations() {
 		operation := transactionOperationWrapper{
 			index:          uint32(opi),
@@ -94,7 +88,7 @@ func claimableBalancesForTransaction(
 			ledgerSequence: sequence,
 		}
 
-		c, err = operation.ClaimableBalances()
+		c, err := operation.ClaimableBalances()
 		if err != nil {
 			return cbs, errors.Wrapf(err, "reading operation %v claimable balances", operation.ID())
 		}
@@ -102,70 +96,6 @@ func claimableBalancesForTransaction(
 	}
 
 	return dedupeClaimableBalances(cbs)
-}
-
-func claimableBalancesForMeta(meta xdr.TransactionMeta) ([]xdr.ClaimableBalanceId, error) {
-	var balances []xdr.ClaimableBalanceId
-	if meta.Operations == nil {
-		return balances, nil
-	}
-
-	for _, op := range *meta.Operations {
-		var cbs []xdr.ClaimableBalanceId
-		cbs, err := claimableBalancesForChanges(op.Changes)
-		if err != nil {
-			return nil, err
-		}
-
-		balances = append(balances, cbs...)
-	}
-
-	return balances, nil
-}
-
-func claimableBalancesForChanges(
-	changes xdr.LedgerEntryChanges,
-) ([]xdr.ClaimableBalanceId, error) {
-	var cbs []xdr.ClaimableBalanceId
-
-	for _, c := range changes {
-		var cb *xdr.ClaimableBalanceId
-
-		switch c.Type {
-		case xdr.LedgerEntryChangeTypeLedgerEntryCreated:
-			cb = claimableBalanceForLedgerEntry(c.MustCreated())
-		case xdr.LedgerEntryChangeTypeLedgerEntryRemoved:
-			cb = claimableBalanceForLedgerKey(c.MustRemoved())
-		case xdr.LedgerEntryChangeTypeLedgerEntryUpdated:
-			cb = claimableBalanceForLedgerEntry(c.MustUpdated())
-		case xdr.LedgerEntryChangeTypeLedgerEntryState:
-			cb = claimableBalanceForLedgerEntry(c.MustState())
-		default:
-			return nil, errors.Errorf("Unknown change type: %s", c.Type)
-		}
-
-		if cb != nil {
-			cbs = append(cbs, *cb)
-		}
-	}
-
-	return cbs, nil
-}
-
-func claimableBalanceForLedgerEntry(le xdr.LedgerEntry) *xdr.ClaimableBalanceId {
-	if le.Data.Type != xdr.LedgerEntryTypeClaimableBalance {
-		return nil
-	}
-	id := le.Data.MustClaimableBalance().BalanceId
-	return &id
-}
-
-func claimableBalanceForLedgerKey(lk xdr.LedgerKey) *xdr.ClaimableBalanceId {
-	if lk.Type != xdr.LedgerEntryTypeClaimableBalance {
-		return nil
-	}
-	id := lk.MustClaimableBalance().BalanceId
-	return &id
 }
 
 func (p *ClaimableBalancesTransactionProcessor) addOperationClaimableBalances(cbSet map[xdr.ClaimableBalanceId]claimableBalance, sequence uint32, transaction ingest.LedgerTransaction) error {
