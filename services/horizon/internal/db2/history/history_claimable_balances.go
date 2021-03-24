@@ -57,7 +57,8 @@ func (q *Q) CreateHistoryClaimableBalances(ids []xdr.ClaimableBalanceId, batchSi
 		}
 		subset := ids[i:end]
 
-		if err := q.ClaimableBalancesByIDs(&cbs, subset); err != nil {
+		cbs, err = q.ClaimableBalancesByIDs(subset)
+		if err != nil {
 			return nil, errors.Wrap(err, "could not select claimable balances")
 		}
 
@@ -82,17 +83,19 @@ type HistoryClaimableBalance struct {
 var selectHistoryClaimableBalance = sq.Select("hcb.*").From("history_claimable_balances hcb")
 
 // ClaimableBalancesByIDs loads rows from `history_claimable_balances`, by claimable_balance_id
-func (q *Q) ClaimableBalancesByIDs(dest interface{}, ids []xdr.ClaimableBalanceId) error {
+func (q *Q) ClaimableBalancesByIDs(ids []xdr.ClaimableBalanceId) (dest []HistoryClaimableBalance, err error) {
 	sql := selectHistoryClaimableBalance.Where(map[string]interface{}{
 		"hcb.claimable_balance_id": ids, // hcb.claimable_balance_id IN (...)
 	})
-	return q.Select(dest, sql)
+	err = q.Select(&dest, sql)
+	return dest, err
 }
 
 // ClaimableBalanceByID loads a row from `history_claimable_balances`, by claimable_balance_id
-func (q *Q) ClaimableBalanceByID(dest interface{}, id xdr.ClaimableBalanceId) error {
+func (q *Q) ClaimableBalanceByID(id xdr.ClaimableBalanceId) (dest HistoryClaimableBalance, err error) {
 	sql := selectHistoryClaimableBalance.Limit(1).Where("hcb.claimable_balance_id = ?", id)
-	return q.Get(dest, sql)
+	err = q.Get(&dest, sql)
+	return dest, err
 }
 
 type OperationClaimableBalanceBatchInsertBuilder interface {

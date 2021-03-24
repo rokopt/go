@@ -131,7 +131,7 @@ func (q *OperationsQ) ForAccount(aid string) *OperationsQ {
 // claimable balance, specified by the claimable balance's hex-encoded id.
 func (q *OperationsQ) ForClaimableBalance(cbID xdr.ClaimableBalanceId) *OperationsQ {
 	var hCB HistoryClaimableBalance
-	q.Err = q.parent.ClaimableBalanceByID(&hCB, cbID)
+	hCB, q.Err = q.parent.ClaimableBalanceByID(cbID)
 	if q.Err != nil {
 		return q
 	}
