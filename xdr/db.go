@@ -50,6 +50,7 @@ func (c *ClaimableBalanceId) Scan(src interface{}) error {
 }
 
 // Value implements the database/sql/driver Valuer interface.
+// This method encodes values to hex.
 func (c ClaimableBalanceId) Value() (driver.Value, error) {
 	return MarshalHex(c)
 }
