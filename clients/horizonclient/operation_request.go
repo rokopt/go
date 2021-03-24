@@ -28,8 +28,7 @@ func (op OperationRequest) BuildURL() (endpoint string, err error) {
 		endpoint = fmt.Sprintf("accounts/%s/%s", op.ForAccount, op.endpoint)
 	}
 	if op.ForClaimableBalance != "" {
-		// The only endpoint which makes sense for claimable balances is /operations (so, we hardcode it)
-		endpoint = fmt.Sprintf("claimable_balances/%s/operations", op.ForClaimableBalance)
+		endpoint = fmt.Sprintf("claimable_balances/%s/%s", op.ForClaimableBalance, op.endpoint)
 	}
 	if op.ForLedger > 0 {
 		endpoint = fmt.Sprintf("ledgers/%d/%s", op.ForLedger, op.endpoint)
