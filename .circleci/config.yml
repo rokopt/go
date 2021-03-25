@@ -443,13 +443,14 @@ jobs:
                 condition: <<parameters.enable-cap-35-tests>>
                 steps:
                   # Install the default version of stellar core
-                  - install_stellar_core
+                  - install_stellar_core:
+                      core-version: 15.2.0-507.59d9685.xenial~unsafemeta~buildtests
             - when:
                 condition: <<parameters.enable-cap-35-tests>>
                 steps:
                   # Install a Stellar Core version with CAP35 support
                   - install_stellar_core:
-                      core-version: 15.3.0-498.7a7f18c.xenial~SetTrustlineFlagsPR~buildtests
+                      core-version: 15.2.0-507.59d9685.xenial~unsafemeta~buildtests
             - run:
                 name: Setting Captive Core env variables
                 command: echo "export HORIZON_INTEGRATION_ENABLE_CAPTIVE_CORE=true" >> $BASH_ENV
